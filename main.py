@@ -1,5 +1,10 @@
 import pmp_manip
 
+CLASS_BEING_CREATED = pmp_manip.SRBlockAndTextInputValue(
+    block=pmp_manip.SRBlock(opcode="&gceClassesOOP::class being created"),
+    immediate="",
+)
+
 def configure(gen_opcode_info_dir: str) -> None:
     cfg = pmp_manip.get_default_config()
     cfg.ext_info_gen.gen_opcode_info_dir = gen_opcode_info_dir
@@ -12,10 +17,24 @@ def convert_python_to_pm() -> pmp_manip.SRProject:
     project.extensions.append(pmp_manip.SRCustomExtension(
         id="gceClassesOOP", 
         url="https://raw.githubusercontent.com/GermanCodeEngineer/PM-Extensions/refs/heads/main/extensions/classes.js",
-        #url="http://localhost:8000/extensions/classes.js",
+    ))
+    project.stage.scripts.append(pmp_manip.SRScript(
+        position=(0, 0),
+        blocks=[
+            pmp_manip.SRBlock(
+                opcode="&gceClassesOOP::create class at (NAME) (SHADOW) {SUBSTACK}",
+                inputs={
+                    "NAME": pmp_manip.SRBlockAndTextInputValue(block=None, immediate="cls"),
+                    "SHADOW": CLASS_BEING_CREATED,
+                    "SUBSTACK": pmp_manip.SRScriptInputValue(blocks=[]),
+                },
+            ),
+        ],
     ))
 
     project.add_all_extensions_to_info_api(pmp_manip.info_api)
+    project.validate(pmp_manip.info_api)
+    print(project)
     return project
 
 
