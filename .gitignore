@@ -1,3 +1,7 @@
+# This project
+output/
+
+
 # Editors
 .vscode/
 .idea/
