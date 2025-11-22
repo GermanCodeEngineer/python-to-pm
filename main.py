@@ -12,6 +12,156 @@ def configure(gen_opcode_info_dir: str) -> None:
         "https://raw.githubusercontent.com/GermanCodeEngineer/PM-Extensions/")
     pmp_manip.init_config(cfg)
 
+class Walk:
+    ...
+    ###def visit_AST(self, node):
+    #def visit_Add(self, node):
+    #def visit_And(self, node):
+    #def visit_AnnAssign(self, node):
+    #def visit_Assert(self, node):
+    #def visit_Assign(self, node):
+    #def visit_AsyncFor(self, node):
+    #def visit_AsyncFunctionDef(self, node):
+    #def visit_AsyncWith(self, node):
+    #def visit_Attribute(self, node):
+    #def visit_AugAssign(self, node):
+    #def visit_AugLoad(self, node):
+    #def visit_AugStore(self, node):
+    #def visit_Await(self, node):
+    #def visit_BinOp(self, node):
+    #def visit_BitAnd(self, node):
+    #def visit_BitOr(self, node):
+    #def visit_BitXor(self, node):
+    #def visit_BoolOp(self, node):
+    #def visit_Break(self, node):
+    #def visit_Call(self, node):
+    #def visit_ClassDef(self, node):
+    #def visit_Compare(self, node):
+    #def visit_Constant(self, node):
+    #def visit_Continue(self, node):
+    #def visit_Del(self, node):
+    #def visit_Delete(self, node):
+    #def visit_Dict(self, node):
+    #def visit_DictComp(self, node):
+    #def visit_Div(self, node):
+    #def visit_Eq(self, node):
+    #def visit_ExceptHandler(self, node):
+    #def visit_Expr(self, node):
+    #def visit_Expression(self, node):
+    #def visit_ExtSlice(self, node):
+    #def visit_FloorDiv(self, node):
+    #def visit_For(self, node):
+    #def visit_FormattedValue(self, node):
+    #def visit_FunctionDef(self, node):
+    #def visit_FunctionType(self, node):
+    #def visit_GeneratorExp(self, node):
+    #def visit_Global(self, node):
+    #def visit_Gt(self, node):
+    #def visit_GtE(self, node):
+    #def visit_If(self, node):
+    #def visit_IfExp(self, node):
+    #def visit_Import(self, node):
+    #def visit_ImportFrom(self, node):
+    #def visit_In(self, node):
+    #def visit_Index(self, node):
+    #def visit_Interactive(self, node):
+    #def visit_Invert(self, node):
+    #def visit_Is(self, node):
+    #def visit_IsNot(self, node):
+    #def visit_JoinedStr(self, node):
+    #def visit_LShift(self, node):
+    #def visit_Lambda(self, node):
+    #def visit_List(self, node):
+    #def visit_ListComp(self, node):
+    #def visit_Load(self, node):
+    #def visit_Lt(self, node):
+    #def visit_LtE(self, node):
+    #def visit_MatMult(self, node):
+    #def visit_Match(self, node):
+    #def visit_MatchAs(self, node):
+    #def visit_MatchClass(self, node):
+    #def visit_MatchMapping(self, node):
+    #def visit_MatchOr(self, node):
+    #def visit_MatchSequence(self, node):
+    #def visit_MatchSingleton(self, node):
+    #def visit_MatchStar(self, node):
+    #def visit_MatchValue(self, node):
+    #def visit_Mod(self, node):
+    #def visit_Module(self, node):
+    #def visit_Mult(self, node):
+    #def visit_Name(self, node):
+    #def visit_NamedExpr(self, node):
+    #def visit_Nonlocal(self, node):
+    #def visit_Not(self, node):
+    #def visit_NotEq(self, node):
+    #def visit_NotIn(self, node):
+    #def visit_Or(self, node):
+    #def visit_Param(self, node):
+    #def visit_ParamSpec(self, node):
+    #def visit_Pass(self, node):
+    #def visit_Pow(self, node):
+    #def visit_RShift(self, node):
+    #def visit_Raise(self, node):
+    #def visit_Return(self, node):
+    #def visit_Set(self, node):
+    #def visit_SetComp(self, node):
+    #def visit_Slice(self, node):
+    #def visit_Starred(self, node):
+    #def visit_Store(self, node):
+    #def visit_Sub(self, node):
+    #def visit_Subscript(self, node):
+    #def visit_Suite(self, node):
+    #def visit_Try(self, node):
+    #def visit_TryStar(self, node):
+    #def visit_Tuple(self, node):
+    #def visit_TypeAlias(self, node):
+    #def visit_TypeIgnore(self, node):
+    #def visit_TypeVar(self, node):
+    #def visit_TypeVarTuple(self, node):
+    #def visit_UAdd(self, node):
+    #def visit_USub(self, node):
+    #def visit_UnaryOp(self, node):
+    #def visit_While(self, node):
+    #def visit_With(self, node):
+    #def visit_Yield(self, node):
+    #def visit_YieldFrom(self, node):
+    #def visit__ast_Ellipsis(self, node):
+    #def visit_alias(self, node):
+    #def visit_arg(self, node):
+    #def visit_arguments(self, node):
+    #def visit_boolop(self, node):
+    #def visit_cmpop(self, node):
+    #def visit_comprehension(self, node):
+    #def visit_excepthandler(self, node):
+    ###def visit_expr(self, node):
+    #def visit_expr_context(self, node):
+    #def visit_keyword(self, node):
+    #def visit_match_case(self, node):
+    ###def visit_mod(self, node):
+    #def visit_operator(self, node):
+    ###def visit_pattern(self, node):
+    #def visit_slice(self, node):
+    ###def visit_stmt(self, node):
+    #def visit_type_ignore(self, node):
+    #def visit_type_param(self, node):
+    #def visit_unaryop(self, node):
+    #def visit_withitem(self, node):
+
+def walk_node(node: ast.AST) -> None:
+    def _walk_nodes(nodes: list[ast.AST]):
+        [walk_node(node) for node in nodes]
+    
+    for field in node._fields:
+        value = getattr(node, field)
+        match field:
+            case "body": _walk_nodes(value)
+            case "targets": _walk_nodes(value)
+            case "id" | "ctx": pass
+            case "value":
+                if not isinstance(node, ast.Constant):
+                    walk_node(value)
+            case _: raise Exception(f"Unknown node field: {field} on {type(node)}")    
+
 def convert_python_to_pm() -> pmp_manip.SRProject:
     project = pmp_manip.SRProject.create_empty()
     project.extensions.append(pmp_manip.SRCustomExtension(
@@ -70,4 +220,6 @@ elif num > 1:
         print(num, "is not a prime number")
     else:
         print(num, "is a prime number")"""
-    print(ast.dump(ast.parse(code), indent=4))
+    module = ast.parse(code)
+    print(ast.dump(module, indent=4))
+    walk_node(module)
