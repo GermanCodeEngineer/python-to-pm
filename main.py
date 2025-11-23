@@ -12,7 +12,7 @@ def configure(gen_opcode_info_dir: str) -> None:
         "https://raw.githubusercontent.com/GermanCodeEngineer/PM-Extensions/")
     pmp_manip.init_config(cfg)
 
-class Walk:
+class Visitor(ast.NodeVisitor):
     ...
     ###def visit_AST(self, node):
     #def visit_Add(self, node):
@@ -25,8 +25,6 @@ class Walk:
     #def visit_AsyncWith(self, node):
     #def visit_Attribute(self, node):
     #def visit_AugAssign(self, node):
-    #def visit_AugLoad(self, node):
-    #def visit_AugStore(self, node):
     #def visit_Await(self, node):
     #def visit_BinOp(self, node):
     #def visit_BitAnd(self, node):
@@ -48,7 +46,6 @@ class Walk:
     #def visit_ExceptHandler(self, node):
     #def visit_Expr(self, node):
     #def visit_Expression(self, node):
-    #def visit_ExtSlice(self, node):
     #def visit_FloorDiv(self, node):
     #def visit_For(self, node):
     #def visit_FormattedValue(self, node):
@@ -63,7 +60,6 @@ class Walk:
     #def visit_Import(self, node):
     #def visit_ImportFrom(self, node):
     #def visit_In(self, node):
-    #def visit_Index(self, node):
     #def visit_Interactive(self, node):
     #def visit_Invert(self, node):
     #def visit_Is(self, node):
@@ -96,7 +92,6 @@ class Walk:
     #def visit_NotEq(self, node):
     #def visit_NotIn(self, node):
     #def visit_Or(self, node):
-    #def visit_Param(self, node):
     #def visit_ParamSpec(self, node):
     #def visit_Pass(self, node):
     #def visit_Pow(self, node):
@@ -110,7 +105,6 @@ class Walk:
     #def visit_Store(self, node):
     #def visit_Sub(self, node):
     #def visit_Subscript(self, node):
-    #def visit_Suite(self, node):
     #def visit_Try(self, node):
     #def visit_TryStar(self, node):
     #def visit_Tuple(self, node):
@@ -140,7 +134,6 @@ class Walk:
     ###def visit_mod(self, node):
     #def visit_operator(self, node):
     ###def visit_pattern(self, node):
-    #def visit_slice(self, node):
     ###def visit_stmt(self, node):
     #def visit_type_ignore(self, node):
     #def visit_type_param(self, node):
