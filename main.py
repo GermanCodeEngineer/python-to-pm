@@ -1,4 +1,6 @@
 import pmp_manip
+from pmp_manip.utility.decorators import grepr_dataclass
+import dataclasses
 import ast
 
 CLASS_BEING_CREATED = pmp_manip.SREmbeddedBlockInputValue(
@@ -11,6 +13,46 @@ def configure(gen_opcode_info_dir: str) -> None:
     cfg.ext_info_gen.is_trusted_extension_origin_handler = lambda source: source.startswith(
         "https://raw.githubusercontent.com/GermanCodeEngineer/PM-Extensions/")
     pmp_manip.init_config(cfg)
+
+@grepr_dataclass(grepr_fields=["type", "children", "fields"])
+class Node:
+    type: str
+    children: dataclasses.field(default_factory=dict) # dict: field_name -> Node or list of Nodes
+    fields: dataclasses.field(default_factory=dict) # simple values (strings, numbers, None)
+
+
+def convert(node):
+    """Convert Python AST nodes into custom Node objects."""
+    if isinstance(node, ast.AST):
+        children = {}
+        fields = {}
+
+        for field_name, value in ast.iter_fields(node):
+
+            # Case 1: list of child AST nodes
+            if isinstance(value, list):
+                child_list = []
+                for item in value:
+                    if isinstance(item, ast.AST):
+                        child_list.append(convert(item))
+                    else:
+                        # Non-AST primitives inside lists
+                        child_list.append(Node("Literal", fields={"value": item}))
+                children[field_name] = child_list
+
+            # Case 2: single child AST node
+            elif isinstance(value, ast.AST):
+                children[field_name] = convert(value)
+
+            # Case 3: primitive field (id, name, number, None...)
+            else:
+                fields[field_name] = value
+
+        return Node(type(node).__name__, children=children, fields=fields)
+
+    else:
+        # Literal fallback (numbers, strings, None)
+        return Node(type="Literal", fields={"value": node})
 
 class Visitor(ast.NodeVisitor):
     ...
@@ -213,6 +255,10 @@ elif num > 1:
         print(num, "is not a prime number")
     else:
         print(num, "is a prime number")"""
+    code = "x = a + b"
     module = ast.parse(code)
     print(ast.dump(module, indent=4))
-    walk_node(module)
+    #walk_node(module)
+    
+    converted = convert(module)
+    print(converted)
