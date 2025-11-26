@@ -1,7 +1,151 @@
+from __future__ import annotations
 import pmp_manip
-from pmp_manip.utility.decorators import grepr_dataclass
+from pmp_manip.utility import grepr_dataclass, AbstractTreePath
 import dataclasses
 import ast
+
+@grepr_dataclass(grepr_fields=["type", "children", "fields"])
+class Node:
+    type: type[ast.AST]
+    path: AbstractTreePath # Path from origin
+    parent_nodes: list[Node]
+    fields: dataclasses.field(default_factory=dict)
+    
+    @property
+    def primitive_fields(self) -> dict[str, Any]: # TODO: define primitives typevar
+        return {field: self.fields[field] for field in NodeTypes[self.type].primitive}
+
+    @property
+    def node_fields(self) -> dict[str, Any]: # TODO: add narrow typing
+        return {field: self.fields[field] for field in NodeTypes[self.type].node}
+    
+    
+    @staticmethod
+    def from_simple(node: ast.AST, path: AbstractTreePath, parent_nodes: list["Node"]):
+        return Node(
+            type=type(node),
+            path=path,
+            parent_nodes=parent_nodes,
+            fields=ast.iter_fields(...!)
+        )
+
+@grepr_dataclass(grepr_fields=["primitive", "node"])
+class ASTTypeInfo:
+    primitive: list[str]
+    node: list[str]
+
+NodeTypes = {
+    ast.Add: ASTTypeInfo(primitive=[], node=[]),
+    ast.And: ASTTypeInfo(primitive=[], node=[]),
+    ast.AnnAssign: ASTTypeInfo(primitive=["simple"], node=["target", "annotation", "value"]),
+    ast.Assert: ASTTypeInfo(primitive=[], node=["test", "msg"]),
+    ast.Assign: ASTTypeInfo(primitive=["type_comment"], node=["targets", "value"]),
+    ast.AsyncFor: ASTTypeInfo(primitive=["type_comment"], node=["target", "iter", "body", "orelse"]),
+    ast.AsyncFunctionDef: ASTTypeInfo(primitive=["name", "type_comment"], node=["args", "body", "decorator_list", "returns", "type_params"]),
+    ast.AsyncWith: ASTTypeInfo(primitive=["type_comment"], node=["items", "body"]),
+    ast.Attribute: ASTTypeInfo(primitive=["attr"], node=["value", "ctx"]),
+    ast.AugAssign: ASTTypeInfo(primitive=[], node=["target", "op", "value"]),
+    ast.Await: ASTTypeInfo(primitive=[], node=["value"]),
+    ast.BinOp: ASTTypeInfo(primitive=[], node=["left", "op", "right"]),
+    ast.BitAnd: ASTTypeInfo(primitive=[], node=[]),
+    ast.BitOr: ASTTypeInfo(primitive=[], node=[]),
+    ast.BitXor: ASTTypeInfo(primitive=[], node=[]),
+    ast.BoolOp: ASTTypeInfo(primitive=[], node=["op", "values"]),
+    ast.Break: ASTTypeInfo(primitive=[], node=[]),
+    ast.Call: ASTTypeInfo(primitive=[], node=["func", "args", "keywords"]),
+    ast.ClassDef: ASTTypeInfo(primitive=["name"], node=["bases", "keywords", "body", "decorator_list", "type_params"]),
+    ast.Compare: ASTTypeInfo(primitive=[], node=["left", "ops", "comparators"]),
+    ast.Constant: ASTTypeInfo(primitive=["value", "kind"], node=[]),
+    ast.Continue: ASTTypeInfo(primitive=[], node=[]),
+    ast.Del: ASTTypeInfo(primitive=[], node=[]),
+    ast.Delete: ASTTypeInfo(primitive=[], node=["targets"]),                                                                     ast.Dict: ASTTypeInfo(primitive=[], node=["keys", "values"]),
+    ast.DictComp: ASTTypeInfo(primitive=[], node=["key", "value", "generators"]),
+    ast.Div: ASTTypeInfo(primitive=[], node=[]),
+    ast.Eq: ASTTypeInfo(primitive=[], node=[]),
+    ast.ExceptHandler: ASTTypeInfo(primitive=["name"], node=["type", "body"]),
+    ast.Expr: ASTTypeInfo(primitive=[], node=["value"]),
+    ast.Expression: ASTTypeInfo(primitive=[], node=["body"]),
+    ast.FloorDiv: ASTTypeInfo(primitive=[], node=[]),
+    ast.For: ASTTypeInfo(primitive=["type_comment"], node=["target", "iter", "body", "orelse"]),
+    ast.FormattedValue: ASTTypeInfo(primitive=["conversion"], node=["value", "format_spec"]),
+    ast.FunctionDef: ASTTypeInfo(primitive=["name", "type_comment"], node=["args", "body", "decorator_list", "returns", "type_params"]),
+    ast.FunctionType: ASTTypeInfo(primitive=[], node=["argtypes", "returns"]),
+    ast.GeneratorExp: ASTTypeInfo(primitive=[], node=["elt", "generators"]),
+    ast.Global: ASTTypeInfo(primitive=["names"], node=[]),
+    ast.Gt: ASTTypeInfo(primitive=[], node=[]),
+    ast.GtE: ASTTypeInfo(primitive=[], node=[]),
+    ast.If: ASTTypeInfo(primitive=[], node=["test", "body", "orelse"]),
+    ast.IfExp: ASTTypeInfo(primitive=[], node=["test", "body", "orelse"]),
+    ast.Import: ASTTypeInfo(primitive=[], node=["names"]),
+    ast.ImportFrom: ASTTypeInfo(primitive=["module", "level"], node=["names"]),
+    ast.In: ASTTypeInfo(primitive=[], node=[]),
+    ast.Interactive: ASTTypeInfo(primitive=[], node=["body"]),
+    ast.Invert: ASTTypeInfo(primitive=[], node=[]),
+    ast.Is: ASTTypeInfo(primitive=[], node=[]),
+    ast.IsNot: ASTTypeInfo(primitive=[], node=[]),
+    ast.JoinedStr: ASTTypeInfo(primitive=[], node=["values"]),
+    ast.LShift: ASTTypeInfo(primitive=[], node=[]),
+    ast.Lambda: ASTTypeInfo(primitive=[], node=["args", "body"]),
+    ast.List: ASTTypeInfo(primitive=[], node=["elts", "ctx"]),
+    ast.ListComp: ASTTypeInfo(primitive=[], node=["elt", "generators"]),
+    ast.Load: ASTTypeInfo(primitive=[], node=[]),
+    ast.Lt: ASTTypeInfo(primitive=[], node=[]),
+    ast.LtE: ASTTypeInfo(primitive=[], node=[]),
+    ast.MatMult: ASTTypeInfo(primitive=[], node=[]),
+    ast.Match: ASTTypeInfo(primitive=[], node=["subject", "cases"]),
+    ast.MatchAs: ASTTypeInfo(primitive=["name"], node=["pattern"]),
+    ast.MatchClass: ASTTypeInfo(primitive=["kwd_attrs"], node=["cls", "patterns", "kwd_patterns"]),
+    ast.MatchMapping: ASTTypeInfo(primitive=["rest"], node=["keys", "patterns"]),
+    ast.MatchOr: ASTTypeInfo(primitive=[], node=["patterns"]),
+    ast.MatchSequence: ASTTypeInfo(primitive=[], node=["patterns"]),
+    ast.MatchSingleton: ASTTypeInfo(primitive=["value"], node=[]),
+    ast.MatchStar: ASTTypeInfo(primitive=["name"], node=[]),
+    ast.MatchValue: ASTTypeInfo(primitive=[], node=["value"]),
+    ast.Mod: ASTTypeInfo(primitive=[], node=[]),
+    ast.Module: ASTTypeInfo(primitive=[], node=["body", "type_ignores"]),
+    ast.Mult: ASTTypeInfo(primitive=[], node=[]),
+    ast.Name: ASTTypeInfo(primitive=["id"], node=["ctx"]),
+    ast.NamedExpr: ASTTypeInfo(primitive=[], node=["target", "value"]),
+    ast.Nonlocal: ASTTypeInfo(primitive=["names"], node=[]),
+    ast.Not: ASTTypeInfo(primitive=[], node=[]),
+    ast.NotEq: ASTTypeInfo(primitive=[], node=[]),
+    ast.NotIn: ASTTypeInfo(primitive=[], node=[]),
+    ast.Or: ASTTypeInfo(primitive=[], node=[]),
+    ast.ParamSpec: ASTTypeInfo(primitive=["name"], node=[]),
+    ast.Pass: ASTTypeInfo(primitive=[], node=[]),
+    ast.Pow: ASTTypeInfo(primitive=[], node=[]),
+    ast.RShift: ASTTypeInfo(primitive=[], node=[]),
+    ast.Raise: ASTTypeInfo(primitive=[], node=["exc", "cause"]),
+    ast.Return: ASTTypeInfo(primitive=[], node=["value"]),
+    ast.Set: ASTTypeInfo(primitive=[], node=["elts"]),
+    ast.SetComp: ASTTypeInfo(primitive=[], node=["elt", "generators"]),
+    ast.Slice: ASTTypeInfo(primitive=[], node=["lower", "upper", "step"]),
+    ast.Starred: ASTTypeInfo(primitive=[], node=["value", "ctx"]),
+    ast.Store: ASTTypeInfo(primitive=[], node=[]),
+    ast.Sub: ASTTypeInfo(primitive=[], node=[]),
+    ast.Subscript: ASTTypeInfo(primitive=[], node=["value", "slice", "ctx"]),
+    ast.Try: ASTTypeInfo(primitive=[], node=["body", "handlers", "orelse", "finalbody"]),
+    ast.TryStar: ASTTypeInfo(primitive=[], node=["body", "handlers", "orelse", "finalbody"]),
+    ast.Tuple: ASTTypeInfo(primitive=[], node=["elts", "ctx"]),
+    ast.TypeAlias: ASTTypeInfo(primitive=["name"], node=["type_params", "value"]),
+    ast.TypeIgnore: ASTTypeInfo(primitive=["lineno", "tag"], node=[]),
+    ast.TypeVar: ASTTypeInfo(primitive=["name"], node=["bound"]),
+    ast.TypeVarTuple: ASTTypeInfo(primitive=["name"], node=[]),
+    ast.UAdd: ASTTypeInfo(primitive=[], node=[]),
+    ast.USub: ASTTypeInfo(primitive=[], node=[]),
+    ast.UnaryOp: ASTTypeInfo(primitive=[], node=["op", "operand"]),
+    ast.While: ASTTypeInfo(primitive=[], node=["test", "body", "orelse"]),
+    ast.With: ASTTypeInfo(primitive=["type_comment"], node=["items", "body"]),
+    ast.Yield: ASTTypeInfo(primitive=[], node=["value"]),
+    ast.YieldFrom: ASTTypeInfo(primitive=[], node=["value"]),
+    ast.alias: ASTTypeInfo(primitive=["name", "asname"], node=[]),
+    ast.arg: ASTTypeInfo(primitive=["arg", "type_comment"], node=["annotation"]),
+    ast.arguments: ASTTypeInfo(primitive=[], node=["posonlyargs", "args", "vararg", "kwonlyargs", "kw_defaults", "kwarg", "defaults"]),
+    ast.comprehension: ASTTypeInfo(primitive=["is_async"], node=["target", "iter", "ifs"]),
+    ast.keyword: ASTTypeInfo(primitive=["arg"], node=["value"]),
+    ast.match_case: ASTTypeInfo(primitive=[], node=["pattern", "guard", "body"]),
+    ast.withitem: ASTTypeInfo(primitive=[], node=["context_expr", "optional_vars"]),
+}
 
 CLASS_BEING_CREATED = pmp_manip.SREmbeddedBlockInputValue(
     block=pmp_manip.SRBlock(opcode="&gceClassesOOP::class being created"),
@@ -13,189 +157,6 @@ def configure(gen_opcode_info_dir: str) -> None:
     cfg.ext_info_gen.is_trusted_extension_origin_handler = lambda source: source.startswith(
         "https://raw.githubusercontent.com/GermanCodeEngineer/PM-Extensions/")
     pmp_manip.init_config(cfg)
-
-@grepr_dataclass(grepr_fields=["type", "children", "fields"])
-class Node:
-    type: str
-    children: dataclasses.field(default_factory=dict) # dict: field_name -> Node or list of Nodes
-    fields: dataclasses.field(default_factory=dict) # simple values (strings, numbers, None)
-
-
-def convert(node):
-    """Convert Python AST nodes into custom Node objects."""
-    if isinstance(node, ast.AST):
-        children = {}
-        fields = {}
-
-        for field_name, value in ast.iter_fields(node):
-
-            # Case 1: list of child AST nodes
-            if isinstance(value, list):
-                child_list = []
-                for item in value:
-                    if isinstance(item, ast.AST):
-                        child_list.append(convert(item))
-                    else:
-                        # Non-AST primitives inside lists
-                        child_list.append(Node("Literal", fields={"value": item}))
-                children[field_name] = child_list
-
-            # Case 2: single child AST node
-            elif isinstance(value, ast.AST):
-                children[field_name] = convert(value)
-
-            # Case 3: primitive field (id, name, number, None...)
-            else:
-                fields[field_name] = value
-
-        return Node(type(node).__name__, children=children, fields=fields)
-
-    else:
-        # Literal fallback (numbers, strings, None)
-        return Node(type="Literal", fields={"value": node})
-
-class Visitor(ast.NodeVisitor):
-    ...
-    ###def visit_AST(self, node):
-    #def visit_Add(self, node):
-    #def visit_And(self, node):
-    #def visit_AnnAssign(self, node):
-    #def visit_Assert(self, node):
-    #def visit_Assign(self, node):
-    #def visit_AsyncFor(self, node):
-    #def visit_AsyncFunctionDef(self, node):
-    #def visit_AsyncWith(self, node):
-    #def visit_Attribute(self, node):
-    #def visit_AugAssign(self, node):
-    #def visit_Await(self, node):
-    #def visit_BinOp(self, node):
-    #def visit_BitAnd(self, node):
-    #def visit_BitOr(self, node):
-    #def visit_BitXor(self, node):
-    #def visit_BoolOp(self, node):
-    #def visit_Break(self, node):
-    #def visit_Call(self, node):
-    #def visit_ClassDef(self, node):
-    #def visit_Compare(self, node):
-    #def visit_Constant(self, node):
-    #def visit_Continue(self, node):
-    #def visit_Del(self, node):
-    #def visit_Delete(self, node):
-    #def visit_Dict(self, node):
-    #def visit_DictComp(self, node):
-    #def visit_Div(self, node):
-    #def visit_Eq(self, node):
-    #def visit_ExceptHandler(self, node):
-    #def visit_Expr(self, node):
-    #def visit_Expression(self, node):
-    #def visit_FloorDiv(self, node):
-    #def visit_For(self, node):
-    #def visit_FormattedValue(self, node):
-    #def visit_FunctionDef(self, node):
-    #def visit_FunctionType(self, node):
-    #def visit_GeneratorExp(self, node):
-    #def visit_Global(self, node):
-    #def visit_Gt(self, node):
-    #def visit_GtE(self, node):
-    #def visit_If(self, node):
-    #def visit_IfExp(self, node):
-    #def visit_Import(self, node):
-    #def visit_ImportFrom(self, node):
-    #def visit_In(self, node):
-    #def visit_Interactive(self, node):
-    #def visit_Invert(self, node):
-    #def visit_Is(self, node):
-    #def visit_IsNot(self, node):
-    #def visit_JoinedStr(self, node):
-    #def visit_LShift(self, node):
-    #def visit_Lambda(self, node):
-    #def visit_List(self, node):
-    #def visit_ListComp(self, node):
-    #def visit_Load(self, node):
-    #def visit_Lt(self, node):
-    #def visit_LtE(self, node):
-    #def visit_MatMult(self, node):
-    #def visit_Match(self, node):
-    #def visit_MatchAs(self, node):
-    #def visit_MatchClass(self, node):
-    #def visit_MatchMapping(self, node):
-    #def visit_MatchOr(self, node):
-    #def visit_MatchSequence(self, node):
-    #def visit_MatchSingleton(self, node):
-    #def visit_MatchStar(self, node):
-    #def visit_MatchValue(self, node):
-    #def visit_Mod(self, node):
-    #def visit_Module(self, node):
-    #def visit_Mult(self, node):
-    #def visit_Name(self, node):
-    #def visit_NamedExpr(self, node):
-    #def visit_Nonlocal(self, node):
-    #def visit_Not(self, node):
-    #def visit_NotEq(self, node):
-    #def visit_NotIn(self, node):
-    #def visit_Or(self, node):
-    #def visit_ParamSpec(self, node):
-    #def visit_Pass(self, node):
-    #def visit_Pow(self, node):
-    #def visit_RShift(self, node):
-    #def visit_Raise(self, node):
-    #def visit_Return(self, node):
-    #def visit_Set(self, node):
-    #def visit_SetComp(self, node):
-    #def visit_Slice(self, node):
-    #def visit_Starred(self, node):
-    #def visit_Store(self, node):
-    #def visit_Sub(self, node):
-    #def visit_Subscript(self, node):
-    #def visit_Try(self, node):
-    #def visit_TryStar(self, node):
-    #def visit_Tuple(self, node):
-    #def visit_TypeAlias(self, node):
-    #def visit_TypeIgnore(self, node):
-    #def visit_TypeVar(self, node):
-    #def visit_TypeVarTuple(self, node):
-    #def visit_UAdd(self, node):
-    #def visit_USub(self, node):
-    #def visit_UnaryOp(self, node):
-    #def visit_While(self, node):
-    #def visit_With(self, node):
-    #def visit_Yield(self, node):
-    #def visit_YieldFrom(self, node):
-    #def visit__ast_Ellipsis(self, node):
-    #def visit_alias(self, node):
-    #def visit_arg(self, node):
-    #def visit_arguments(self, node):
-    #def visit_boolop(self, node):
-    #def visit_cmpop(self, node):
-    #def visit_comprehension(self, node):
-    #def visit_excepthandler(self, node):
-    ###def visit_expr(self, node):
-    #def visit_expr_context(self, node):
-    #def visit_keyword(self, node):
-    #def visit_match_case(self, node):
-    ###def visit_mod(self, node):
-    #def visit_operator(self, node):
-    ###def visit_pattern(self, node):
-    ###def visit_stmt(self, node):
-    #def visit_type_ignore(self, node):
-    #def visit_type_param(self, node):
-    #def visit_unaryop(self, node):
-    #def visit_withitem(self, node):
-
-def walk_node(node: ast.AST) -> None:
-    def _walk_nodes(nodes: list[ast.AST]):
-        [walk_node(node) for node in nodes]
-    
-    for field in node._fields:
-        value = getattr(node, field)
-        match field:
-            case "body": _walk_nodes(value)
-            case "targets": _walk_nodes(value)
-            case "id" | "ctx": pass
-            case "value":
-                if not isinstance(node, ast.Constant):
-                    walk_node(value)
-            case _: raise Exception(f"Unknown node field: {field} on {type(node)}")    
 
 def convert_python_to_pm() -> pmp_manip.SRProject:
     project = pmp_manip.SRProject.create_empty()
