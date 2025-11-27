@@ -47,7 +47,4 @@ if __name__ == "__main__":
     print(ast)
     project = convert_python_to_pm(ast)
     frproject = project.to_first(pmp_manip.info_api)
-    #print(frproject)
-    #frproject.to_file("output/generated.pmp")
-    frproject = pmp_manip.FRProject.from_file("output/changed.pmp")
-    print(frproject)
+    frproject.to_file("output/generated.pmp")

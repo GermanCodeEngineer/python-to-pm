@@ -2,6 +2,7 @@ from __future__ import annotations
 import ast
 import copy
 import dataclasses
+import pmp_manip
 from pmp_manip.utility import grepr_dataclass, AbstractTreePath
 from typing import Any
 
@@ -13,7 +14,7 @@ class Node:
     fields: dict[str, Any] = dataclasses.field(default_factory=dict)
     
     @property
-    def primitive_fields(self) -> dict[str, Any]: # TODO: define primitives typevar
+    def primitive_fields(self) -> dict[str, Node]: # TODO: define primitives typevar
         return {field: self.fields[field] for field in NODE_TYPES[self.type].primitive}
 
     @property
@@ -34,6 +35,7 @@ class Node:
         fields_path = path.add_attribute("fields")
 
         for field_name in NODE_TYPES[node.type].primitive:
+            field_path = fields_path.add_index_or_key(field_name)
             node.fields[field_name] = getattr(simple_node, field_name)
         for field_name in NODE_TYPES[node.type].node:
             value = getattr(simple_node, field_name)
@@ -56,6 +58,10 @@ class Node:
     def from_code(code: str) -> Node:
         module = ast.parse(code)
         return Node.from_simple(module, AbstractTreePath(), [])
+
+
+    def to_block(self) -> pmp_manip.SRBlock:
+        pass
 
 @grepr_dataclass(grepr_fields=["primitive", "node"])
 class ASTTypeInfo:
