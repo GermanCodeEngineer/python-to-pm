@@ -1,11 +1,7 @@
 from __future__ import annotations
 import pmp_manip
 
-from node import Node
-
-CLASS_BEING_CREATED = pmp_manip.SREmbeddedBlockInputValue(
-    block=pmp_manip.SRBlock(opcode="&gceClassesOOP::class being created"),
-)
+from node import Node, InstructionList
 
 def configure(gen_opcode_info_dir: str) -> None:
     cfg = pmp_manip.get_default_config()
@@ -20,19 +16,8 @@ def convert_python_to_pm(ast: Node) -> pmp_manip.SRProject:
         id="gceClassesOOP",  
         url="https://raw.githubusercontent.com/GermanCodeEngineer/PM-Extensions/refs/heads/main/extensions/classes.js",
     ))
-    project.stage.scripts.append(pmp_manip.SRScript(
-        position=(0, 0),
-        blocks=[
-            pmp_manip.SRBlock(
-                opcode="&gceClassesOOP::create class at (NAME) {:SHADOW:} {SUBSTACK}",
-                inputs={
-                    "NAME": pmp_manip.SRBlockAndTextInputValue(block=None, immediate="cls"),
-                    "SHADOW": CLASS_BEING_CREATED,
-                    "SUBSTACK": pmp_manip.SRScriptInputValue(blocks=[]),
-                },
-            ),
-        ],
-    ))
+    instructions = ast.to_block().as_instructions()
+    project.stage.scripts.append(pmp_manip.SRScript(position=(0,0), blocks=instructions))
 
     project.add_all_extensions_to_info_api(pmp_manip.info_api)
     print(project)
@@ -42,7 +27,12 @@ def convert_python_to_pm(ast: Node) -> pmp_manip.SRProject:
 
 if __name__ == "__main__":
     configure("output/gen_opcode_info")
-    code = "x = a + b"
+    code = '''
+class X:
+    5
+    "5"
+    global hi, opl
+'''
     ast = Node.from_code(code)
     print(ast)
     project = convert_python_to_pm(ast)

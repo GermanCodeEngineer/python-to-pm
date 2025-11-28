@@ -4,23 +4,85 @@ import copy
 import dataclasses
 import pmp_manip
 from pmp_manip.utility import grepr_dataclass, AbstractTreePath
-from typing import Any
+from typing import Any, NoReturn, Iterable
+
+PRIMITIVE_T = str | int | list[str] | None
+
+
+def flatten[T](l: Iterable[Iterable[T]], /) -> list[T]:
+    return [item for sub in l for item in sub]
+
+class Shadows:
+    CLASS_BEING_CREATED = pmp_manip.SREmbeddedBlockInputValue(
+        block=pmp_manip.SRBlock(opcode="&gceClassesOOP::class being created"),
+    )
+
+
+@grepr_dataclass(grepr_fields=["block", "immediate", "dropdown", "blocks"])
+class InputValueContent:
+    """Represents a value that can be put in to another block input."""
+    block: pmp_manip.SRBlock | None = None
+    immediate: str | bool | None = None
+    dropdown: pmp_manip.SRDropdownValue | None = None
+    blocks: list[pmp_manip.SRBlock] = dataclasses.field(default_factory=list)
+
+    def as_block_and_text(self) -> pmp_manip.SRBlockAndTextInputValue:
+        return pmp_manip.SRBlockAndTextInputValue(
+            block=self.block,
+            immediate=self.immediate if isinstance(self.immediate, str) else "",
+        )
+
+    def as_instructions(self) -> NoReturn:
+        raise Exception("Cannot convert input value to a list of instructions.")
+
+@grepr_dataclass(grepr_fields=["blocks"])
+class InstructionList:
+    """Represents a list of blocks."""
+    blocks: list[pmp_manip.SRBlock] = dataclasses.field(default_factory=list)
+
+    def as_block_and_text(self) -> NoReturn:
+        raise Exception("Cannot convert list of instructions to an input value.")
+    
+    def as_instructions(self) -> list[pmp_manip.SRBlock]:
+        return self.blocks
 
 @grepr_dataclass(grepr_fields=["type", "children", "primitive_fields", "node_fields"])
 class Node:
+    """Smart ast.AST node wrapper."""
     type: type[ast.AST]
-    path: AbstractTreePath # Path from origin
+    path: AbstractTreePath # path from origin
     parent_nodes: list[Node]
     fields: dict[str, Any] = dataclasses.field(default_factory=dict)
     
     @property
-    def primitive_fields(self) -> dict[str, Node]: # TODO: define primitives typevar
+    def primitive_fields(self) -> dict[str, PRIMITIVE_T]: # TODO: define primitives typevar
         return {field: self.fields[field] for field in NODE_TYPES[self.type].primitive}
 
     @property
-    def node_fields(self) -> dict[str, Any]: # TODO: add narrow typing
+    def node_fields(self) -> dict[str, Node]: # TODO: add narrow typing
         return {field: self.fields[field] for field in NODE_TYPES[self.type].node}
     
+    def primitive_field(self, name: str) -> PRIMITIVE_T:
+        value = self.fields[name]
+        assert isinstance(value, PRIMITIVE_T), f"Unexpected field value for {name}"
+        return value
+    
+    def node_field(self, name: str) -> "Node":
+        value = self.fields[name]
+        assert isinstance(value, Node), f"Unexpected field value for {name}: {value}"
+        return value
+    
+    def opt_node_field(self, name: str) -> "Node | None":
+        value = self.fields[name]
+        assert isinstance(value, Node | None), f"Unexpected field value for {name}"
+        return value
+
+    def node_list_field(self, name: str) -> list["Node"]:
+        value = self.fields[name]
+        assert isinstance(value, list), f"Unexpected field value for {name}"
+        for item in value:
+            assert isinstance(item, Node), f"Unexpected field value for {name}"
+        return value
     
     @staticmethod
     def from_simple(simple_node: ast.AST, path: AbstractTreePath, parent_nodes: list["Node"]) -> Node:
@@ -59,9 +121,67 @@ class Node:
         module = ast.parse(code)
         return Node.from_simple(module, AbstractTreePath(), [])
 
+    def to_block(self) -> InputValueContent | InstructionList:
+        match self.type:
+            case ast.Module:
+                return InstructionList(blocks=flatten([
+                    node.to_block().as_instructions() for node in self.node_list_field("body")
+                ]))
+            case ast.ClassDef:
+                return InstructionList(blocks=[pmp_manip.SRBlock(
+                    opcode="&gceClassesOOP::create class at (NAME) {:SHADOW:} {SUBSTACK}",
+                    inputs={
+                        "NAME": pmp_manip.SRBlockAndTextInputValue(block=None, immediate=self.primitive_field("name")),
+                        "SHADOW": Shadows.CLASS_BEING_CREATED,
+                        "SUBSTACK": pmp_manip.SRScriptInputValue(blocks=flatten([
+                            node.to_block().as_instructions() for node in self.node_list_field("body")
+                        ])),
+                    },
+                )])
+            case ast.Expr:
+                return InstructionList(blocks=[pmp_manip.SRBlock(
+                    opcode="&gceClassesOOP::execute expression (EXPR)",
+                    inputs={
+                        "EXPR": self.node_field("value").to_block().as_block_and_text(),
+                    },
+                )])
+            case ast.Global:
+                return InstructionList(blocks=[pmp_manip.SRBlock(
+                    opcode="&jwArray::set builder to (ARRAY)",
+                    inputs={
+                        "ARRAY": self.node_field("names").to_block().as_block_and_text(), # HERE
+                    },
+                )])
+            case ast.Constant:
+                value = self.primitive_field("value")
+                if isinstance(value, str):
+                    if value[0].isnumeric():
+                        return InputValueContent(block=pmp_manip.SRBlock(
+                            opcode="&operators::(VALUE)",
+                            inputs={"VALUE": pmp_manip.SRBlockAndTextInputValue(
+                                block=None, immediate=value
+                            )},
+                        ))
+                    else:
+                        return InputValueContent(immediate=value)
+                elif isinstance(value, int):
+                    return InputValueContent(immediate=str(value))
+                elif isinstance(value, list):
+                    for item in value:
+                        assert isinstance(item, str)
+                    return InputValueContent(block=pmp_manip.SRBlock(
+                        opcode="&jwArray::parse"
+                    ))
+                elif value is None:
+                    pass
+                
+                str | int | list[str] | None
 
-    def to_block(self) -> pmp_manip.SRBlock:
-        pass
+                return InputValueContent(
+                    immediate=""
+                )
+
+            case _: raise Exception(f"Not implemented node type {self.type.__name__}")
 
 @grepr_dataclass(grepr_fields=["primitive", "node"])
 class ASTTypeInfo:
