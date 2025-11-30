@@ -23,7 +23,7 @@ def convert_python_to_pm(ast: Node) -> pmp_manip.SRProject:
     project.add_all_extensions_to_info_api(pmp_manip.info_api)
     pmp_manip.info_api.generate_and_add_extension(extension_id="jwArray", extension_source=None)
     
-    print(project)
+    #print(project)
     project.validate(pmp_manip.info_api)
     return project
 
@@ -36,10 +36,16 @@ class X:
     "5"
     "hello5"
     None
+    def z(self):
+        "hi"
+    def __init__(self):
+        "hmm..."
+def X():
+    None
 '''
     ast = Node.from_code(code)
     print(ast)
     project = convert_python_to_pm(ast)
     frproject = project.to_first(pmp_manip.info_api)
-    print(frproject)
+    #print(frproject)
     frproject.to_file("output/generated.pmp")

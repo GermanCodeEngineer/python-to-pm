@@ -41,6 +41,12 @@ class Shadows:
     CLASS_BEING_CREATED = pmp_manip.SREmbeddedBlockInputValue(
         block=pmp_manip.SRBlock(opcode="&gceClassesOOP::class being created"),
     )
+    SELF = pmp_manip.SREmbeddedBlockInputValue(
+        block=pmp_manip.SRBlock(opcode="&gceClassesOOP::self"),
+    )
+    ARGUMENTS = pmp_manip.SREmbeddedBlockInputValue(
+        block=pmp_manip.SRBlock(opcode="&gceClassesOOP::function arguments"),
+    )
 
 
 @grepr_dataclass(grepr_fields=["block", "immediate", "dropdown", "blocks"])
@@ -80,6 +86,10 @@ class Node:
     fields: dict[str, Any] = dataclasses.field(default_factory=dict)
     
     @property
+    def parent_node(self) -> Node | None:
+        return self.parent_nodes[-1]if self.parent_nodes else None
+
+    @property
     def primitive_fields(self) -> dict[str, PRIMITIVE_T]: # TODO: define primitives typevar
         return {field: self.fields[field] for field in NODE_TYPES[self.type].primitive}
 
@@ -92,12 +102,12 @@ class Node:
         assert is_primitive(value), f"Unexpected field value for {name}"
         return value
     
-    def node_field(self, name: str) -> "Node":
+    def node_field(self, name: str) -> Node:
         value = self.fields[name]
         assert isinstance(value, Node), f"Unexpected field value for {name}: {value}"
         return value
     
-    def opt_node_field(self, name: str) -> "Node | None":
+    def opt_node_field(self, name: str) -> Node | None:
         value = self.fields[name]
         assert isinstance(value, Node | None), f"Unexpected field value for {name}"
         return value
@@ -162,6 +172,33 @@ class Node:
                             node.to_block().as_instructions() for node in self.node_list_field("body")
                         ])),
                     },
+                )])
+            case ast.FunctionDef:
+                inputs = {
+                    "NAME": pmp_manip.SRBlockAndTextInputValue(block=None, immediate=self.primitive_field("name")),
+                    "SUBSTACK": pmp_manip.SRScriptInputValue(blocks=flatten([
+                        node.to_block().as_instructions() for node in self.node_list_field("body")
+                    ])),
+                }
+                dropdowns = {}
+                if self.parent_node and (self.parent_node.type is ast.ClassDef):
+                    if self.primitive_field("name") == "__init__":
+                        opcode = "&gceClassesOOP::define [SPECIAL_METHOD] method {:SHADOW1:} {:SHADOW2:} {SUBSTACK}"
+                        del inputs["NAME"]
+                        dropdowns["SPECIAL_METHOD"] = pmp_manip.SRDropdownValue(
+                            kind=pmp_manip.DropdownValueKind.STANDARD, value="init",
+                        )
+                    else:
+                        opcode = "&gceClassesOOP::define instance method (NAME) {:SHADOW1:} {:SHADOW2:} {SUBSTACK}"
+                    inputs["SHADOW1"] = Shadows.SELF
+                    inputs["SHADOW2"] = Shadows.ARGUMENTS
+                else:
+                    opcode = "&gceClassesOOP::create function at (NAME) {:SHADOW:} {SUBSTACK}"
+                    inputs["SHADOW"] = Shadows.ARGUMENTS
+                return InstructionList(blocks=[pmp_manip.SRBlock(
+                    opcode=opcode,
+                    inputs=inputs,
+                    dropdowns=dropdowns,
                 )])
             case ast.Expr:
                 return execute_expression(self.node_field("value").to_block())
