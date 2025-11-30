@@ -17,9 +17,12 @@ def convert_python_to_pm(ast: Node) -> pmp_manip.SRProject:
         url="https://raw.githubusercontent.com/GermanCodeEngineer/PM-Extensions/refs/heads/main/extensions/classes.js",
     ))
     instructions = ast.to_block().as_instructions()
+    print(instructions)
     project.stage.scripts.append(pmp_manip.SRScript(position=(0,0), blocks=instructions))
 
     project.add_all_extensions_to_info_api(pmp_manip.info_api)
+    pmp_manip.info_api.generate_and_add_extension(extension_id="jwArray", extension_source=None)
+    
     print(project)
     project.validate(pmp_manip.info_api)
     return project
@@ -31,10 +34,12 @@ if __name__ == "__main__":
 class X:
     5
     "5"
-    global hi, opl
+    "hello5"
+    None
 '''
     ast = Node.from_code(code)
     print(ast)
     project = convert_python_to_pm(ast)
     frproject = project.to_first(pmp_manip.info_api)
+    print(frproject)
     frproject.to_file("output/generated.pmp")

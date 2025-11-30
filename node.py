@@ -2,15 +2,40 @@ from __future__ import annotations
 import ast
 import copy
 import dataclasses
+import json
 import pmp_manip
 from pmp_manip.utility import grepr_dataclass, AbstractTreePath
 from typing import Any, NoReturn, Iterable
 
 PRIMITIVE_T = str | int | list[str] | None
+def is_primitive(v: Any) -> bool:
+    if isinstance(v, (str, int, type(None))):
+        return True
+    return all(isinstance(item, str) for item in v)
 
 
 def flatten[T](l: Iterable[Iterable[T]], /) -> list[T]:
     return [item for sub in l for item in sub]
+
+def execute_expression(expr: InputValueContent) -> InstructionList:
+    return InstructionList(blocks=[pmp_manip.SRBlock(
+        opcode="&gceClassesOOP::execute expression (EXPR)",
+        inputs={
+            "EXPR": expr.as_block_and_text(),
+        },
+    )])
+
+def parse_string_list(value: list[str]) -> InputValueContent:
+    for item in value:
+        assert isinstance(item, str)
+    return InputValueContent(block=pmp_manip.SRBlock(
+        opcode="&jwArray::parse (INPUT) as array",
+        inputs={
+            "INPUT": InputValueContent(
+                immediate=json.dumps(value),
+            ).as_block_and_text(),
+        },
+    ))
 
 class Shadows:
     CLASS_BEING_CREATED = pmp_manip.SREmbeddedBlockInputValue(
@@ -64,7 +89,7 @@ class Node:
     
     def primitive_field(self, name: str) -> PRIMITIVE_T:
         value = self.fields[name]
-        assert isinstance(value, PRIMITIVE_T), f"Unexpected field value for {name}"
+        assert is_primitive(value), f"Unexpected field value for {name}"
         return value
     
     def node_field(self, name: str) -> "Node":
@@ -85,7 +110,7 @@ class Node:
         return value
     
     @staticmethod
-    def from_simple(simple_node: ast.AST, path: AbstractTreePath, parent_nodes: list["Node"]) -> Node:
+    def from_simple(simple_node: ast.AST, path: AbstractTreePath=AbstractTreePath(), parent_nodes: list["Node"]=[]) -> Node:
         node = Node(
             type=type(simple_node),
             path=path,
@@ -139,19 +164,7 @@ class Node:
                     },
                 )])
             case ast.Expr:
-                return InstructionList(blocks=[pmp_manip.SRBlock(
-                    opcode="&gceClassesOOP::execute expression (EXPR)",
-                    inputs={
-                        "EXPR": self.node_field("value").to_block().as_block_and_text(),
-                    },
-                )])
-            case ast.Global:
-                return InstructionList(blocks=[pmp_manip.SRBlock(
-                    opcode="&jwArray::set builder to (ARRAY)",
-                    inputs={
-                        "ARRAY": self.node_field("names").to_block().as_block_and_text(), # HERE
-                    },
-                )])
+                return execute_expression(self.node_field("value").to_block())
             case ast.Constant:
                 value = self.primitive_field("value")
                 if isinstance(value, str):
@@ -167,19 +180,11 @@ class Node:
                 elif isinstance(value, int):
                     return InputValueContent(immediate=str(value))
                 elif isinstance(value, list):
-                    for item in value:
-                        assert isinstance(item, str)
-                    return InputValueContent(block=pmp_manip.SRBlock(
-                        opcode="&jwArray::parse"
-                    ))
+                    return parse_string_list(value)
                 elif value is None:
-                    pass
-                
-                str | int | list[str] | None
-
-                return InputValueContent(
-                    immediate=""
-                )
+                    return InputValueContent(block=pmp_manip.SRBlock(
+                        opcode="&gceClassesOOP::Nothing",
+                    ))
 
             case _: raise Exception(f"Not implemented node type {self.type.__name__}")
 
