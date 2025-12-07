@@ -38,6 +38,10 @@ class X:
     None
     def z(self):
         "hi"
+    @x(t=6)
+    @property
+    def g(self):
+        "hi"
     def __init__(self):
         "hmm..."
 def X():
@@ -45,7 +49,7 @@ def X():
 '''
     ast = Node.from_code(code)
     print(ast)
-    project = convert_python_to_pm(ast)
-    frproject = project.to_first(pmp_manip.info_api)
-    #print(frproject)
-    frproject.to_file("output/generated.pmp")
+    #project = convert_python_to_pm(ast)
+    #frproject = project.to_first(pmp_manip.info_api)
+    ##print(frproject)
+    #frproject.to_file("output/generated.pmp")

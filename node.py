@@ -4,8 +4,9 @@ import copy
 import dataclasses
 import json
 import pmp_manip
-from pmp_manip.utility import grepr_dataclass, AbstractTreePath
+from pmp_manip.utility import grepr, grepr_dataclass, AbstractTreePath
 from typing import Any, NoReturn, Iterable
+from utility import special_case_repr
 
 PRIMITIVE_T = str | int | list[str] | None
 def is_primitive(v: Any) -> bool:
@@ -77,6 +78,16 @@ class InstructionList:
     def as_instructions(self) -> list[pmp_manip.SRBlock]:
         return self.blocks
 
+def _repr_override(self: Node) -> str:
+    input("reached override "+InstructionList.__repr__(self))
+    if self.type is ast.Name:
+        return ('Node(type=<ast.Name>, primitive_fields["id"]='
+            + repr(self.primitive_field("id"))
+            + ', node_fields["ctx"].type=<ast.'
+            + self.node_field("ctx").type.__name__ # Load / Store
+            + ">)")
+    return NotImplemented
+@special_case_repr(new_repr=_repr_override)
 @grepr_dataclass(grepr_fields=["type", "children", "primitive_fields", "node_fields"])
 class Node:
     """Smart ast.AST node wrapper."""
@@ -224,6 +235,7 @@ class Node:
                     ))
 
             case _: raise Exception(f"Not implemented node type {self.type.__name__}")
+print(Node.__repr__)
 
 @grepr_dataclass(grepr_fields=["primitive", "node"])
 class ASTTypeInfo:
